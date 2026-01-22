@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notes App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", -apple-system, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, 
+        #667eea 0%, 
+        #764ba2 25%, 
+        #f093fb 50%, 
+        #4facfe 75%,
+        #00f2fe 100%);
+      background-attachment: fixed;
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      padding: 20px;
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 30%, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        transparent 50%);
+      animation: pulse 20s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      z-index: 1;
+      position: relative;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 30px;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h1 {
+      color: white;
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .note-input-section {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 
+        0 32px 80px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    #noteInput {
+      width: 100%;
+      min-height: 150px;
+      padding: 20px;
+      border: none;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 1rem;
+      line-height: 1.6;
+      outline: none;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    #noteInput::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    #noteInput:focus {
+      background: rgba(255, 255, 255, 0.35);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .category-container {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+      align-items: center;
+    }
+
+    .category-label {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.95rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    #categorySelect {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    #categorySelect:focus {
+      background: rgba(255, 255, 255, 0.35);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    #categorySelect option {
+      background: #667eea;
+      color: white;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    button {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #saveBtn {
+      background: rgba(76, 175, 80, 0.4);
+      border-color: rgba(76, 175, 80, 0.5);
+    }
+
+    #saveBtn:hover {
+      background: rgba(76, 175, 80, 0.5);
+    }
+
+    .notes-section {
+      animation: fadeIn 0.6s ease-out 0.4s both;
+    }
+
+    .notes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      color: white;
+    }
+
+    .notes-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .notes-count {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 6px 12px;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .note-item {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      animation: slideUp 0.4s ease-out;
+      transition: all 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .note-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .note-content {
+      color: white;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .note-date {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .delete-btn {
+      padding: 8px 16px;
+      background: rgba(244, 67, 54, 0.4);
+      border-color: rgba(244, 67, 54, 0.5);
+      font-size: 0.9rem;
+    }
+
+    .delete-btn:hover {
+      background: rgba(244, 67, 54, 0.5);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      opacity: 0.6;
+    }
+
+    .empty-state-text {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .note-content mark {
+      background: rgba(255, 235, 59, 0.4);
+      color: white;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .note-category {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .category-work {
+      background: rgba(33, 150, 243, 0.3);
+      color: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(33, 150, 243, 0.5);
+    }
+
+    .category-personal {
+      background: rgba(156, 39, 176, 0.3);
+      color: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(156, 39, 176, 0.5);
+    }
+
+    .category-ideas {
+      background: rgba(255, 152, 0, 0.3);
+      color: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(255, 152, 0, 0.5);
+    }
+
+    .category-tasks {
+      background: rgba(76, 175, 80, 0.3);
+      color: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+    }
+
+    .category-other {
+      background: rgba(158, 158, 158, 0.3);
+      color: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(158, 158, 158, 0.5);
+    }
+
+    .search-section {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 
+        0 32px 80px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      animation: fadeIn 0.6s ease-out 0.1s both;
+    }
+
+    .filter-container {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.95rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    #categoryFilter {
+      flex: 1;
+      min-width: 150px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    #categoryFilter:focus {
+      background: rgba(255, 255, 255, 0.35);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    #categoryFilter option {
+      background: #667eea;
+      color: white;
+    }
+
+    #searchInput {
+      width: 100%;
+      padding: 16px 20px;
+      border: none;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-family: inherit;
+    }
+
+    #searchInput::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    #searchInput:focus {
+      background: rgba(255, 255, 255, 0.35);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-icon {
+      position: relative;
+    }
+
+    .search-icon::after {
+      content: '🔍';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      opacity: 0.6;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2.2rem;
+      }
+
+      .note-input-section {
+        padding: 20px;
+      }
+
+      .button-container {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .notes-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .note-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .delete-btn {
+        width: 100%;
+      }
+
+      .category-container,
+      .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .category-label,
+      .filter-label {
+        margin-bottom: 8px;
+      }
+
+      #categorySelect,
+      #categoryFilter {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="app-header">
+      <h1>📝 Notes</h1>
+      <p class="subtitle">Capture your thoughts and ideas</p>
+    </div>
+
+    <div class="search-section">
+      <div class="search-icon">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Search notes..."
+          autocomplete="off"
+        >
+      </div>
+      <div class="filter-container">
+        <span class="filter-label">Filter by category:</span>
+        <select id="categoryFilter">
+          <option value="all">All Categories</option>
+          <option value="Personal">Personal</option>
+          <option value="Work">Work</option>
+          <option value="Ideas">Ideas</option>
+          <option value="Tasks">Tasks</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="note-input-section">
+      <textarea 
+        id="noteInput" 
+        placeholder="Write your note here..."
+        rows="6"
+      ></textarea>
+      <div class="category-container">
+        <span class="category-label">Category:</span>
+        <select id="categorySelect">
+          <option value="Personal">Personal</option>
+          <option value="Work">Work</option>
+          <option value="Ideas">Ideas</option>
+          <option value="Tasks">Tasks</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="button-container">
+        <button id="saveBtn">Save Note</button>
+      </div>
+    </div>
+
+    <div class="notes-section">
+      <div class="notes-header">
+        <h2 class="notes-title">Your Notes</h2>
+        <span class="notes-count" id="notesCount">0 notes</span>
+      </div>
+      <div class="notes-list" id="notesList">
+        <!-- Notes will be displayed here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get DOM elements
+    const noteInput = document.getElementById('noteInput');
+    const saveBtn = document.getElementById('saveBtn');
+    const categorySelect = document.getElementById('categorySelect');
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const notesList = document.getElementById('notesList');
+    const notesCount = document.getElementById('notesCount');
+
+    // Load notes from localStorage on page load
+    let notes = [];
+    let searchFilter = '';
+    let categoryFilterValue = 'all';
+
+    function loadNotes() {
+  const savedNotes = localStorage.getItem('notes');
+  if (savedNotes) {
+    try {
+      notes = JSON.parse(savedNotes);
+
+      // Backward compatibility: add category to old notes
+      let updated = false;
+      notes = notes.map(note => {
+        if (!note.category) {
+          updated = true;
+          return {
+            ...note,
+            category: 'Other'
+          };
+        }
+        return note;
+      });
+
+      // Save only if we modified old notes
+      if (updated) {
+        localStorage.setItem('notes', JSON.stringify(notes));
+      }
+
+    } catch (e) {
+      console.error('Error loading notes:', e);
+      notes = [];
+    }
+  }
+  renderNotes();
+}
+
+    // Save notes to localStorage
+    function saveNotes() {
+      try {
+        localStorage.setItem('notes', JSON.stringify(notes));
+      } catch (e) {
+        console.error('Error saving notes:', e);
+        alert('Error saving note. Your browser may not support localStorage.');
+      }
+    }
+
+    // Format date/time
+    function formatDateTime(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      if (seconds < 60) {
+        return 'Just now';
+      } else if (minutes < 60) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      } else if (hours < 24) {
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      } else if (days < 7) {
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+      } else {
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    }
+
+    // Get category class name for styling
+    function getCategoryClass(category) {
+      const categoryLower = category.toLowerCase();
+      return `category-${categoryLower}`;
+    }
+
+    // Render all notes with optional search and category filters
+    function renderNotes() {
+      notesList.innerHTML = '';
+
+      // Filter notes based on search text and category
+      let filteredNotes = notes;
+      
+      // Apply category filter
+      if (categoryFilterValue !== 'all') {
+        filteredNotes = filteredNotes.filter(note => 
+          note.category === categoryFilterValue
+        );
+      }
+      
+      // Apply search filter
+      if (searchFilter.trim()) {
+        const searchLower = searchFilter.toLowerCase();
+        filteredNotes = filteredNotes.filter(note => 
+          note.content.toLowerCase().includes(searchLower)
+        );
+      }
+
+      if (notes.length === 0) {
+        notesList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <div class="empty-state-text">No notes yet. Start writing!</div>
+          </div>
+        `;
+        notesCount.textContent = '0 notes';
+        return;
+      }
+
+      if (filteredNotes.length === 0) {
+        let emptyMessage = '';
+        if (searchFilter.trim() && categoryFilterValue !== 'all') {
+          emptyMessage = `No notes found matching "${escapeHtml(searchFilter)}" in ${categoryFilterValue} category`;
+        } else if (searchFilter.trim()) {
+          emptyMessage = `No notes found matching "${escapeHtml(searchFilter)}"`;
+        } else if (categoryFilterValue !== 'all') {
+          emptyMessage = `No notes found in ${categoryFilterValue} category`;
+        }
+        
+        notesList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-text">${emptyMessage || 'No notes found'}</div>
+          </div>
+        `;
+        notesCount.textContent = `0 of ${notes.length} notes`;
+        return;
+      }
+
+      // Sort notes by date (newest first)
+      const sortedNotes = [...filteredNotes].sort((a, b) => b.timestamp - a.timestamp);
+
+      sortedNotes.forEach((note, index) => {
+        const noteElement = document.createElement('div');
+        noteElement.className = 'note-item';
+        noteElement.style.animationDelay = `${index * 0.05}s`;
+        
+        // Get category (default to 'Other' for backward compatibility)
+        const category = note.category || 'Other';
+        const categoryClass = getCategoryClass(category);
+        
+        // Highlight search term in note content
+        let displayContent = escapeHtml(note.content);
+        if (searchFilter.trim()) {
+          const regex = new RegExp(`(${escapeRegex(searchFilter)})`, 'gi');
+          displayContent = escapeHtml(note.content).replace(regex, '<mark>$1</mark>');
+        }
+        
+        noteElement.innerHTML = `
+          <div class="note-category ${categoryClass}">${escapeHtml(category)}</div>
+          <div class="note-content">${displayContent}</div>
+          <div class="note-footer">
+            <div class="note-date">${formatDateTime(note.timestamp)}</div>
+            <div style="display:flex; gap:10px;">
+  <button onclick="editNote(${note.id})" data-id="${note.id}">Edit</button>
+  <button class="delete-btn" onclick="deleteNote(${note.id})">Delete</button>
+</div>
+          </div>
+        `;
+        
+        notesList.appendChild(noteElement);
+      });
+
+      // Update note count
+      if (searchFilter.trim() || categoryFilterValue !== 'all') {
+        notesCount.textContent = `${filteredNotes.length} of ${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+      } else {
+        notesCount.textContent = `${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+      }
+    }
+
+    // Escape regex special characters
+    function escapeRegex(text) {
+      return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Save a new note
+    function saveNote() {
+      const content = noteInput.value.trim();
+      
+      if (!content) {
+        alert('Please enter some text before saving.');
+        return;
+      }
+
+      const newNote = {
+        id: Date.now(),
+        content: content,
+        category: categorySelect.value,
+        timestamp: Date.now()
+      };
+
+      notes.push(newNote);
+      saveNotes();
+      noteInput.value = '';
+      renderNotes();
+
+      // Focus back on input
+      noteInput.focus();
+    }
+
+    // Delete a note
+    function deleteNote(noteId) {
+      if (confirm('Are you sure you want to delete this note?')) {
+        notes = notes.filter(note => note.id !== noteId);
+        saveNotes();
+        renderNotes();
+      }
+    }
+
+    function editNote(noteId) {
+  const noteIndex = notes.findIndex(note => note.id === noteId);
+  if (noteIndex === -1) return;
+
+  const note = notes[noteIndex];
+
+  const noteElements = document.querySelectorAll('.note-item');
+  const noteElement = Array.from(noteElements).find(el =>
+    el.querySelector(`button[data-id="${noteId}"]`)
+  );
+
+  if (!noteElement) return;
+
+  const contentDiv = noteElement.querySelector('.note-content');
+
+  // SAVE MODE
+  if (contentDiv.querySelector('textarea')) {
+    const textarea = contentDiv.querySelector('textarea');
+    const newContent = textarea.value.trim();
+
+    if (!newContent) {
+      alert('Note cannot be empty.');
+      return;
+    }
+
+    notes[noteIndex].content = newContent;
+    saveNotes();
+    renderNotes();
+    return;
+  }
+
+  // EDIT MODE
+  const textarea = document.createElement('textarea');
+  textarea.value = note.content;
+  textarea.style.width = '100%';
+  textarea.style.minHeight = '120px';
+  textarea.style.borderRadius = '12px';
+  textarea.style.padding = '12px';
+  textarea.style.fontFamily = 'inherit';
+  textarea.style.fontSize = '1rem';
+  textarea.style.resize = 'vertical';
+
+  contentDiv.innerHTML = '';
+  contentDiv.appendChild(textarea);
+  textarea.focus();
+}
+
+
+    // Event listeners
+    saveBtn.addEventListener('click', saveNote);
+
+    noteInput.addEventListener('keydown', (e) => {
+      // Ctrl+Enter or Cmd+Enter to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        saveNote();
+      }
+    });
+
+    // Search input event listener for real-time filtering
+    searchInput.addEventListener('input', (e) => {
+      searchFilter = e.target.value;
+      renderNotes();
+    });
+
+    // Category filter event listener
+    categoryFilter.addEventListener('change', (e) => {
+      categoryFilterValue = e.target.value;
+      renderNotes();
+    });
+
+    // Load notes when page loads
+    loadNotes();
+
+    // Focus input on load
+    noteInput.focus();
+  </script>
+</body>
+</html>
+
