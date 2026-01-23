@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Color Palette Generator</title>
+
+<style>
+:root {
+  --bg: #0f1220;
+  --radius: 18px;
+  --glass: rgba(255,255,255,0.12);
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a1d3a, #0f1220 60%);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app {
+  width: min(1100px, 95vw);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin-bottom: 6px;
+}
+
+.controls-top {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+select {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: #ffffff;   /* light background */
+  color: #111111;        /* dark text */
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;   
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* removes OS styling quirks */
+}
+
+select option {
+  background: #ffffff;   /* light background */
+  color: #111111;        /* dark text */
+}
+
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.color-card {
+  height: 250px;
+  border-radius: var(--radius);
+  position: relative;
+  cursor: pointer;
+  transition:
+    transform .35s var(--ease),
+    box-shadow .35s var(--ease),
+    background-color .45s ease;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+}
+
+
+.color-card:hover {
+  transform: translateY(-6px);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.55), transparent);
+}
+
+.info {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hex {
+  background: var(--glass);
+  padding: 8px 12px;
+  border-radius: 10px;
+  letter-spacing: .05em;
+  font-weight: 600;
+}
+
+.lock {
+  border: none;
+  background: var(--glass);
+  color: white;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.locked {
+  background: rgba(255,255,255,.35);
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+button {
+  padding: 14px 26px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #6c7cff, #9b6cff);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(108,124,255,.45);
+  transition: transform .3s var(--ease);
+}
+
+button:hover {
+  transform: translateY(-3px);
+}
+
+.history {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.history-item {
+  width: 90px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0,0,0,.35);
+}
+
+.history-item div {
+  flex: 1;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.8);
+  padding: 10px 16px;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.color-card.animate-in {
+  animation: cardIn 420ms ease forwards;
+}
+
+
+
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>Color Palette Generator</h1>
+    <p>Harmony · Lock · History · Export</p>
+  </div>
+
+  <div class="controls-top">
+    <select id="harmony">
+      <option value="random">Random</option>
+      <option value="mono">Monochromatic</option>
+      <option value="comp">Complementary</option>
+      <option value="analog">Analogous</option>
+      <option value="triad">Triadic</option>
+    </select>
+  </div>
+
+  <div class="palette" id="palette"></div>
+
+  <div class="controls">
+    <button onclick="generatePalette()">Generate</button>
+    <button onclick="exportPNG()">Export PNG</button>
+  </div>
+
+  <div class="history" id="history"></div>
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+const paletteEl = document.getElementById("palette");
+const historyEl = document.getElementById("history");
+const harmonySelect = document.getElementById("harmony");
+const toast = document.getElementById("toast");
+
+let colors = [];
+let locks = Array(5).fill(false);
+let history = JSON.parse(localStorage.getItem("paletteHistory")) || [];
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 800);
+}
+
+/* ---------- Color Math ---------- */
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n =>
+    Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))))
+      .toString(16).padStart(2, "0");
+  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+}
+
+function generateByHarmony(type) {
+  const baseHue = Math.floor(Math.random() * 360);
+  let hues = [];
+
+  if (type === "mono") {
+    hues = Array(5).fill(baseHue);
+  } else if (type === "comp") {
+    hues = [baseHue, baseHue + 180];
+  } else if (type === "analog") {
+    hues = [baseHue - 30, baseHue, baseHue + 30];
+  } else if (type === "triad") {
+    hues = [baseHue, baseHue + 120, baseHue + 240];
+  }
+
+  return Array(5).fill(0).map((_, i) => {
+    if (type === "random") {
+      return "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0").toUpperCase();
+    }
+    const h = hues[i % hues.length];
+    const s = 65;
+    const l = 35 + i * 8;
+    return hslToHex((h + 360) % 360, s, l);
+  });
+}
+
+/* ---------- Core ---------- */
+function generatePalette() {
+  const generated = generateByHarmony(harmonySelect.value);
+  for (let i = 0; i < 5; i++) {
+    if (!locks[i]) colors[i] = generated[i];
+  }
+  saveHistory();
+  render();
+}
+
+function render() {
+  paletteEl.innerHTML = "";
+  colors.forEach((c, i) => {
+    const card = document.createElement("div");
+    card.className = "color-card";
+    card.style.background = c;
+
+
+    card.onclick = () => {
+      navigator.clipboard.writeText(c);
+      showToast(`${c} copied`);
+    };
+
+
+
+
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+
+    const info = document.createElement("div");
+    info.className = "info";
+
+    const hex = document.createElement("div");
+    hex.className = "hex";
+    hex.textContent = c;
+
+    const lock = document.createElement("button");
+    lock.className = "lock" + (locks[i] ? " locked" : "");
+    lock.textContent = locks[i] ? "🔒" : "🔓";
+    lock.onclick = e => {
+      e.stopPropagation();
+      locks[i] = !locks[i];
+      render();
+    };
+
+    info.append(hex, lock);
+    card.append(overlay, info);
+    paletteEl.append(card);
+  });
+  requestAnimationFrame(() => {
+  card.classList.remove("animate-in"); // safety reset
+  card.style.animationDelay = `${i * 60}ms`;
+  card.classList.add("animate-in");
+});
+
+
+
+  renderHistory();
+}
+
+function saveHistory() {
+  history.unshift([...colors]);
+  history = history.slice(0, 10);
+  localStorage.setItem("paletteHistory", JSON.stringify(history));
+}
+
+function renderHistory() {
+  historyEl.innerHTML = "";
+  history.forEach(pal => {
+    const item = document.createElement("div");
+    item.className = "history-item";
+    pal.forEach(c => {
+      const d = document.createElement("div");
+      d.style.background = c;
+      item.appendChild(d);
+    });
+    item.onclick = () => {
+      colors = [...pal];
+      locks.fill(false);
+      render();
+    };
+    historyEl.appendChild(item);
+  });
+}
+
+/* ---------- Export ---------- */
+function exportPNG() {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = 1000;
+  canvas.height = 300;
+
+  const w = canvas.width / 5;
+  colors.forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(i * w, 0, w, canvas.height);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 22px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(c, i * w + w / 2, canvas.height - 28);
+  });
+
+  const a = document.createElement("a");
+  a.download = "palette.png";
+  a.href = canvas.toDataURL();
+  a.click();
+}
+
+/* Init */
+colors = generateByHarmony("random");
+render();
+</script>
+</body>
+</html>
