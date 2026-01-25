@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether | Particle Playground</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            /* Premium Glass Vars */
+            --glass-bg: rgba(20, 20, 25, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            
+            --accent: #00f3ff;
+            --accent-glow: rgba(0, 243, 255, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #8b9bb4;
+            
+            --panel-width: 320px;
+            --transition-speed: 0.4s;
+            --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text-main);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* --- TOGGLE BUTTON --- */
+        #toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #toggle-btn:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: scale(1.05);
+        }
+        #toggle-btn svg {
+            fill: var(--text-main);
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        /* --- CONTROL PANEL --- */
+        #controls {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: var(--panel-width);
+            height: 100vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-left: 1px solid var(--glass-border);
+            padding: 25px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            z-index: 90;
+            
+            /* Slide Animation */
+            transform: translateX(0);
+            transition: transform var(--transition-speed) var(--ease-out);
+        }
+
+        #controls.collapsed {
+            transform: translateX(100%);
+        }
+
+        /* Typography */
+        h2 {
+            margin: 60px 0 20px 0; /* Space for toggle button */
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        h3 {
+            margin: 25px 0 10px 0;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 5px;
+        }
+
+        /* Inputs & Sliders */
+        .control-group { margin-bottom: 20px; }
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        label span { color: #fff; font-family: monospace; font-size: 0.8rem; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #fff;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        input[type="range"]:hover::-webkit-slider-thumb {
+            background: var(--accent);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* Color Picker */
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* Buttons & Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        button {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        button.active-palette {
+            background: rgba(0, 243, 255, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+        }
+
+        #fullscreen-btn {
+            width: 100%;
+            margin-bottom: 5px;
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        /* Shortcuts Footer */
+        .shortcuts {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 2;
+        }
+        .key {
+            background: rgba(255,255,255,0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-family: monospace;
+        }
+
+        /* Status Overlay */
+        #status-overlay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .status-badge {
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--accent);
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            backdrop-filter: blur(4px);
+            display: none; 
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="status-overlay">
+        <div id="pause-indicator" class="status-badge">PAUSED</div>
+        <div id="wind-indicator" class="status-badge" style="display: block; opacity: 0;"></div>
+    </div>
+
+    <div id="toggle-btn" onclick="toggleControls()">
+        <svg viewBox="0 0 24 24">
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+        </svg>
+    </div>
+
+    <div id="controls">
+        <h2>Aether Lab</h2>
+        <button id="fullscreen-btn" onclick="toggleFullscreen()">Go Fullscreen</button>
+
+        <h3>Presets</h3>
+        <div class="grid-2">
+            <button onclick="applyPreset('galaxy')">Galaxy</button>
+            <button onclick="applyPreset('fireworks')">Fireworks</button>
+            <button onclick="applyPreset('constellation')">Nodes</button>
+            <button onclick="applyPreset('chaos')">Chaos</button>
+        </div>
+
+        <h3>Color Theme</h3>
+        <div class="control-group">
+            <input type="color" id="color" value="#00f3ff" title="Pick Single Color">
+        </div>
+        <div class="grid-2">
+            <button onclick="setPalette('neon')" id="btn-neon">Neon</button>
+            <button onclick="setPalette('fire')" id="btn-fire">Magma</button>
+            <button onclick="setPalette('ice')" id="btn-ice">Frost</button>
+            <button onclick="setPalette('nature')" id="btn-nature">Nature</button>
+        </div>
+
+        <h3>Physics</h3>
+        <div class="control-group">
+            <label>Count <span id="val-count">100</span></label>
+            <input type="range" id="count" min="10" max="300" value="100">
+        </div>
+        <div class="control-group">
+            <label>Speed <span id="val-speed">2</span></label>
+            <input type="range" id="speed" min="1" max="20" value="2">
+        </div>
+        <div class="control-group">
+            <label>Gravity <span id="val-gravity">0</span></label>
+            <input type="range" id="gravity" min="-5" max="5" step="0.1" value="0">
+        </div>
+        <div class="control-group">
+            <label>Interaction <span id="val-force">Attract</span></label>
+            <input type="range" id="mouseForce" min="-2000" max="2000" value="500">
+        </div>
+
+        <h3>Visuals</h3>
+        <div class="control-group">
+            <label>Size <span id="val-size">3</span>px</label>
+            <input type="range" id="size" min="1" max="20" value="3">
+        </div>
+        <div class="control-group">
+            <label>Connections <span id="val-dist">100</span></label>
+            <input type="range" id="linkDist" min="0" max="300" value="100">
+        </div>
+        <div class="control-group">
+            <label>Trail Length <span id="val-trails">20%</span></label>
+            <input type="range" id="trails" min="0.05" max="0.95" step="0.05" value="0.2">
+        </div>
+
+        <div class="shortcuts">
+            <span class="key">H</span> Hide UI &nbsp; <span class="key">F</span> Fullscreen<br>
+            <span class="key">Space</span> Pause &nbsp; <span class="key">R</span> Reset<br>
+            <span class="key">1-4</span> Presets &nbsp; <span class="key">Arrows</span> Wind Force
+        </div>
+    </div>
+
+<script>
+    /**
+     * CONFIG & STATE
+     */
+    const PALETTES = {
+        neon: ['#00f3ff', '#ff00ff', '#ffff00', '#00ff00'],
+        fire: ['#ff0000', '#ff4500', '#ff8c00', '#ffd700'],
+        ice: ['#e0ffff', '#00ced1', '#4682b4', '#1e90ff'],
+        nature: ['#228b22', '#32cd32', '#98fb98', '#f0e68c']
+    };
+
+    const config = {
+        count: 100,
+        baseSize: 3,
+        speed: 2,
+        singleColor: '#00f3ff',
+        activePalette: null,
+        gravity: 0,
+        linkDistance: 120,
+        trail: 0.2, 
+        mouseForce: 1000, 
+    };
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const controlsPanel = document.getElementById('controls');
+    
+    let width, height;
+    let particles = [];
+    let isPaused = false;
+    let wind = { x: 0, y: 0 };
+    const mouse = { x: undefined, y: undefined, active: false };
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Toggle UI
+    function toggleControls() {
+        controlsPanel.classList.toggle('collapsed');
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(e => console.log(e));
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        const btn = document.getElementById('fullscreen-btn');
+        btn.innerText = document.fullscreenElement ? "Exit Fullscreen" : "Go Fullscreen";
+        setTimeout(resize, 100);
+    });
+
+    /**
+     * PARTICLES
+     */
+    class Particle {
+        constructor(x, y, isBurst = false) {
+            this.x = x || Math.random() * width;
+            this.y = y || Math.random() * height;
+            
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = (Math.random() * 0.5 + 0.5) * config.speed;
+            
+            this.vx = Math.cos(angle) * velocity;
+            this.vy = Math.sin(angle) * velocity;
+            
+            if(isBurst) {
+                this.vx *= 3;
+                this.vy *= 3;
+            }
+
+            this.size = Math.random() * config.baseSize + 1;
+            this.color = this.assignColor();
+        }
+
+        assignColor() {
+            if (config.activePalette) {
+                return config.activePalette[Math.floor(Math.random() * config.activePalette.length)];
+            }
+            return config.singleColor;
+        }
+
+        updateColor() {
+            this.color = this.assignColor();
+        }
+
+        update() {
+            // Apply wind
+            this.vx += wind.x * 0.2;
+            this.vy += wind.y * 0.2;
+            this.vy += config.gravity * 0.05;
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Mouse Interaction
+            if (mouse.active) {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 300) {
+                    const forceDirectionX = dx / dist;
+                    const forceDirectionY = dy / dist;
+                    const force = (300 - dist) / 300; 
+                    const direction = config.mouseForce > 0 ? 1 : -1;
+                    const power = Math.abs(config.mouseForce) * 0.0001;
+
+                    this.vx += forceDirectionX * force * power * direction;
+                    this.vy += forceDirectionY * force * power * direction;
+                }
+            }
+
+            // Friction
+            this.vx *= 0.99;
+            this.vy *= 0.99;
+
+            // Bounce
+            if (this.x < 0 || this.x > width) { this.vx *= -0.8; this.x = Math.max(0, Math.min(width, this.x)); }
+            if (this.y < 0 || this.y > height) { this.vy *= -0.8; this.y = Math.max(0, Math.min(height, this.y)); }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            // The "Glow" effect
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+            ctx.fill();
+            ctx.shadowBlur = 0; // Reset for performance
+        }
+    }
+
+    function initParticles() {
+        particles = [];
+        for (let i = 0; i < config.count; i++) particles.push(new Particle());
+    }
+
+    function spawnBurst(x, y) {
+        if(isPaused) return; 
+        const burstCount = 15; 
+        for(let i = 0; i < burstCount; i++) particles.push(new Particle(x, y, true));
+        
+        if(particles.length > 320) particles.splice(0, particles.length - 320);
+        document.getElementById('val-count').innerText = particles.length;
+    }
+
+    function drawLines() {
+        if (config.linkDistance <= 0 || particles.length > 400) return;
+
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                if(Math.abs(dx) > config.linkDistance || Math.abs(dy) > config.linkDistance) continue;
+
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < config.linkDistance) {
+                    ctx.beginPath();
+                    const opacity = 1 - (dist / config.linkDistance);
+                    ctx.strokeStyle = convertHexToRGBA(particles[i].color, opacity);
+                    ctx.lineWidth = 1;
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    function convertHexToRGBA(hex, alpha) {
+        if(!hex) return `rgba(255,255,255,${alpha})`;
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if(isPaused) return;
+
+        // Fading Trail Effect
+        ctx.fillStyle = `rgba(5, 5, 5, ${config.trail})`; 
+        ctx.fillRect(0, 0, width, height);
+
+        // Auto-Trim or Spawn to match slider
+        if (particles.length > config.count) particles.splice(0, 2); 
+        else if (particles.length < config.count) particles.push(new Particle());
+
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+
+        drawLines();
+    }
+
+    /**
+     * INPUTS & PRESETS
+     */
+    function setPalette(name) {
+        document.querySelectorAll('.grid-2 button').forEach(b => b.classList.remove('active-palette'));
+        
+        if (name === 'single') {
+            config.activePalette = null;
+        } else {
+            config.activePalette = PALETTES[name];
+            const btn = document.getElementById(`btn-${name}`);
+            if(btn) btn.classList.add('active-palette');
+        }
+        particles.forEach(p => p.updateColor());
+    }
+
+    // UI Elements
+    const inputs = {
+        count: document.getElementById('count'),
+        size: document.getElementById('size'),
+        speed: document.getElementById('speed'),
+        gravity: document.getElementById('gravity'),
+        mouseForce: document.getElementById('mouseForce'),
+        linkDist: document.getElementById('linkDist'),
+        color: document.getElementById('color'),
+        trails: document.getElementById('trails'),
+    };
+
+    const labels = {
+        count: document.getElementById('val-count'),
+        size: document.getElementById('val-size'),
+        speed: document.getElementById('val-speed'),
+        gravity: document.getElementById('val-gravity'),
+        mouseForce: document.getElementById('val-force'),
+        linkDist: document.getElementById('val-dist'),
+        trails: document.getElementById('val-trails'),
+    };
+
+    function setupListeners() {
+        const bindInput = (key, type = 'int', callback) => {
+            inputs[key].addEventListener('input', (e) => {
+                const val = type === 'float' ? parseFloat(e.target.value) : parseInt(e.target.value);
+                config[key === 'linkDist' ? 'linkDistance' : key === 'baseSize' ? 'baseSize' : key] = val;
+                
+                if(labels[key]) {
+                    if(key === 'mouseForce') labels[key].innerText = val > 0 ? "Attract" : "Repel";
+                    else if(key === 'trails') labels[key].innerText = Math.round((1-val)*100) + "%";
+                    else labels[key].innerText = val;
+                }
+
+                if(key === 'count' && particles.length > val) particles.length = val;
+                if(key === 'size') { config.baseSize = val; particles.forEach(p => p.size = Math.random() * val + 1); }
+                if(callback) callback(val);
+            });
+        };
+
+        bindInput('count');
+        bindInput('size');
+        bindInput('speed');
+        bindInput('gravity', 'float');
+        bindInput('mouseForce');
+        bindInput('linkDist');
+        bindInput('trails', 'float', (val) => { config.trail = val; });
+
+        inputs.color.addEventListener('input', (e) => {
+            config.singleColor = e.target.value;
+            setPalette('single');
+            particles.forEach(p => p.updateColor());
+        });
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+        if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+
+        switch(e.code) {
+            case 'KeyH': toggleControls(); break;
+            case 'KeyF': toggleFullscreen(); break;
+            case 'Space':
+                isPaused = !isPaused;
+                document.getElementById('pause-indicator').style.display = isPaused ? 'block' : 'none';
+                break;
+            case 'KeyR': initParticles(); break;
+            case 'KeyC': particles = []; break;
+            case 'Digit1': applyPreset('galaxy'); break;
+            case 'Digit2': applyPreset('fireworks'); break;
+            case 'Digit3': applyPreset('constellation'); break;
+            case 'Digit4': applyPreset('chaos'); break;
+            case 'ArrowUp': wind.y = -1; break;
+            case 'ArrowDown': wind.y = 1; break;
+            case 'ArrowLeft': wind.x = -1; break;
+            case 'ArrowRight': wind.x = 1; break;
+        }
+        updateWindIndicator();
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if(['ArrowUp','ArrowDown'].includes(e.code)) wind.y = 0;
+        if(['ArrowLeft','ArrowRight'].includes(e.code)) wind.x = 0;
+        updateWindIndicator();
+    });
+
+    function updateWindIndicator() {
+        const el = document.getElementById('wind-indicator');
+        if(wind.x === 0 && wind.y === 0) {
+            el.style.opacity = 0;
+        } else {
+            el.style.opacity = 1;
+            el.style.display = 'block';
+            let dir = "WIND: ";
+            if(wind.y < 0) dir += "↑ ";
+            if(wind.y > 0) dir += "↓ ";
+            if(wind.x < 0) dir += "← ";
+            if(wind.x > 0) dir += "→ ";
+            el.innerText = dir;
+        }
+    }
+
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; });
+    window.addEventListener('mouseleave', () => { mouse.active = false; });
+    window.addEventListener('mousedown', (e) => {
+        if(e.target.closest('#controls') || e.target.closest('#toggle-btn')) return;
+        spawnBurst(e.clientX, e.clientY);
+    });
+
+    function applyPreset(name) {
+        const setUI = (id, val) => {
+            inputs[id].value = val;
+            inputs[id].dispatchEvent(new Event('input'));
+        };
+
+        switch(name) {
+            case 'galaxy':
+                setPalette('neon');
+                setUI('count', 250); setUI('size', 2); setUI('speed', 3);
+                setUI('gravity', 0); setUI('linkDist', 60); setUI('mouseForce', 1500); setUI('trails', 0.1);
+                break;
+            case 'fireworks':
+                setPalette('fire');
+                setUI('count', 100); setUI('size', 3); setUI('speed', 8);
+                setUI('gravity', 3); setUI('linkDist', 0); setUI('mouseForce', -500); setUI('trails', 0.2);
+                break;
+            case 'constellation':
+                setPalette('single');
+                config.singleColor = '#ffffff';
+                inputs.color.value = '#ffffff';
+                setUI('count', 80); setUI('size', 4); setUI('speed', 1);
+                setUI('gravity', 0); setUI('linkDist', 200); setUI('mouseForce', 500); setUI('trails', 0.4);
+                break;
+            case 'chaos':
+                setPalette('nature');
+                setUI('count', 200); setUI('size', 3); setUI('speed', 15);
+                setUI('gravity', 0); setUI('linkDist', 50); setUI('mouseForce', -2000); setUI('trails', 0.3);
+                break;
+        }
+        particles.forEach(p => p.updateColor());
+    }
+
+    setupListeners();
+    initParticles();
+    animate();
+
+</script>
+</body>
+</html>
