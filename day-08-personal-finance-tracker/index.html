@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceOS: Midnight Glass</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Theme: Midnight Glass */
+            --bg-body: #0f172a;        /* Slate 900 */
+            --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%), 
+                           radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%);
+            
+            --glass-bg: rgba(30, 41, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: 16px;
+
+            --text-main: #f1f5f9;      /* Slate 100 */
+            --text-muted: #94a3b8;     /* Slate 400 */
+            
+            /* Neon Accents */
+            --primary: #38bdf8;        /* Sky 400 */
+            --primary-glow: rgba(56, 189, 248, 0.4);
+            --accent: #8b5cf6;         /* Violet 500 */
+            
+            --success: #2dd4bf;        /* Teal 400 */
+            --warning: #fbbf24;        /* Amber 400 */
+            --danger: #f87171;         /* Red 400 */
+
+            --radius: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-body);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed; /* Parallax feel */
+            color: var(--text-main);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1280px; margin: 0 auto; }
+
+        /* --- Glass Components --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Header --- */
+        header {
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        h1 { 
+            font-weight: 700; 
+            font-size: 2rem; 
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- Buttons --- */
+        button { font-family: inherit; transition: all 0.2s ease; cursor: pointer; }
+        
+        .btn-ghost {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .btn-ghost:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .btn-glow {
+            background: var(--primary);
+            color: #0f172a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-icon { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; }
+        .btn-icon:hover { color: var(--danger); text-shadow: 0 0 8px rgba(248, 113, 113, 0.5); }
+
+        /* --- Filters --- */
+        .filter-bar {
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .filter-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; display: block; }
+        
+        .preset-group { display: flex; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 12px; }
+        .btn-preset {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .btn-preset:hover { color: white; }
+        .btn-preset.active { background: rgba(255,255,255,0.1); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .date-input {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            outline: none;
+            color-scheme: dark; /* Dark calendar picker */
+        }
+        .date-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+
+        /* --- Budget Bar --- */
+        .budget-card { padding: 25px; margin-bottom: 30px; }
+        .budget-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; }
+        .budget-track { background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; overflow: hidden; position: relative; }
+        .budget-fill { height: 100%; border-radius: 4px; box-shadow: 0 0 10px currentColor; transition: width 1s cubic-bezier(0.22, 1, 0.36, 1); }
+        
+        /* Neon Colors */
+        .bg-success { background-color: var(--success); color: var(--success); }
+        .bg-warning { background-color: var(--warning); color: var(--warning); }
+        .bg-danger { background-color: var(--danger); color: var(--danger); }
+
+        .budget-settings { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border); display: none; }
+        .budget-settings.open { display: block; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Stats Grid --- */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        
+        .stat-card { padding: 25px; position: relative; overflow: hidden; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+        /* Glowing accent at top of card */
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--primary), transparent); opacity: 0.5; }
+        
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+        .stat-value { font-size: 2.2rem; font-weight: 700; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+
+        /* --- Inputs --- */
+        .input-group { margin-bottom: 20px; }
+        .input-label { display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        .glass-input {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .glass-input:focus {
+            border-color: var(--primary);
+            background: rgba(0,0,0,0.3);
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+        }
+        select.glass-input { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; }
+
+        /* --- Main Layout --- */
+        .main-grid { display: grid; grid-template-columns: 360px 1fr; gap: 30px; }
+        @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+
+        /* --- Charts --- */
+        .charts-container { display: flex; flex-direction: column; gap: 20px; }
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } }
+        
+        .chart-card { padding: 25px; min-height: 300px; display: flex; flex-direction: column; }
+        .chart-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: var(--text-main); }
+        
+        /* Custom Legend */
+        .pie-layout { display: flex; align-items: center; gap: 20px; height: 100%; }
+        .legend-scroll { flex: 1; max-height: 220px; overflow-y: auto; padding-right: 10px; }
+        .legend-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; padding: 8px; border-radius: 8px; transition: background 0.2s; }
+        .legend-item:hover { background: rgba(255,255,255,0.03); }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; margin-right: 10px; }
+        .legend-bar-bg { width: 60px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-left: 10px; }
+        .legend-bar-fill { height: 100%; border-radius: 2px; }
+
+        /* --- Table --- */
+        .table-card { margin-top: 30px; padding: 0; overflow: hidden; }
+        .table-header { padding: 25px; border-bottom: 1px solid var(--glass-border); }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 18px 25px; color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
+        th:hover { color: var(--text-main); }
+        td { padding: 18px 25px; border-bottom: 1px solid var(--glass-border); color: var(--text-main); font-size: 0.95rem; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .tag { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        /* Neon Tags */
+        .tag-food { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+        .tag-transport { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .tag-entertainment { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .tag-bills { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+        .tag-shopping { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); }
+        .tag-other { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>FinanceOS</h1>
+        <button onclick="resetData()" class="btn-ghost">Reset Data</button>
+    </header>
+
+    <div class="glass-panel filter-bar">
+        <div>
+            <span class="filter-label">Timeframe</span>
+            <div class="preset-group">
+                <button class="btn-preset" onclick="setFilterPreset('week')" id="btn-week">Week</button>
+                <button class="btn-preset active" onclick="setFilterPreset('month')" id="btn-month">Month</button>
+                <button class="btn-preset" onclick="setFilterPreset('lastMonth')" id="btn-lastMonth">Last Month</button>
+                <button class="btn-preset" onclick="setFilterPreset('all')" id="btn-all">All</button>
+            </div>
+        </div>
+        <div>
+            <span class="filter-label">Custom Range</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="date" id="filterStart" class="date-input" onchange="handleCustomDate()">
+                <span style="color: var(--text-muted)">to</span>
+                <input type="date" id="filterEnd" class="date-input" onchange="handleCustomDate()">
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel budget-card">
+        <div class="budget-header">
+            <div>
+                <h2 style="font-size: 1.2rem; font-weight: 600;">Monthly Budget Limit</h2>
+                <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;" id="budgetStatusText">On track</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: white;" id="globalFigures">$0 / $0</div>
+                <button class="btn-ghost" style="margin-top: 5px; padding: 4px 10px; font-size: 0.75rem;" onclick="toggleBudgetSettings()">Edit Limits</button>
+            </div>
+        </div>
+        <div class="budget-track">
+            <div id="globalProgressBar" class="budget-fill bg-success" style="width: 0%"></div>
+        </div>
+        
+        <div id="budgetSettings" class="budget-settings">
+            <h3 style="color:white; margin-bottom: 15px; font-size:1rem;">Configuration</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                    <label class="input-label">Global Limit ($)</label>
+                    <input type="number" id="globalBudgetInput" class="glass-input">
+                </div>
+            </div>
+            <h4 style="color:var(--text-muted); margin: 15px 0 10px; font-size:0.9rem;">Category Limits</h4>
+            <div id="categoryInputs" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;"></div>
+            <button onclick="saveBudgets()" class="btn-glow" style="margin-top: 20px; width: auto; padding: 10px 30px;">Save Changes</button>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="glass-panel stat-card">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value" id="totalMonth">$0.00</div>
+        </div>
+        <div class="glass-panel stat-card">
+            <div class="stat-label">Top Category</div>
+            <div class="stat-value" style="font-size: 1.5rem;" id="topCategory">-</div>
+        </div>
+        <div class="glass-panel stat-card">
+            <div class="stat-label">Daily Average</div>
+            <div class="stat-value" id="avgDaily">$0.00</div>
+        </div>
+        <div class="glass-panel stat-card">
+            <div class="stat-label">Transactions</div>
+            <div class="stat-value" id="totalTx">0</div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="glass-panel" style="padding: 30px; height: fit-content;">
+            <h2 style="margin-bottom: 25px; font-weight: 600;">Add Transaction</h2>
+            <form id="expenseForm">
+                <div class="input-group">
+                    <label class="input-label">Amount</label>
+                    <input type="number" id="amount" class="glass-input" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Category</label>
+                    <select id="category" class="glass-input">
+                        <option value="Food">Food & Dining</option>
+                        <option value="Transport">Transportation</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Bills">Bills & Utilities</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Date</label>
+                    <input type="date" id="date" class="glass-input" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Description</label>
+                    <input type="text" id="description" class="glass-input" placeholder="e.g. Netflix Subscription">
+                </div>
+                <button type="submit" class="btn-glow">Add Expense</button>
+            </form>
+        </div>
+
+        <div class="charts-container">
+            <div class="glass-panel chart-card" style="min-height: 280px;">
+                <div class="chart-title">Spending Breakdown</div>
+                <div class="pie-layout">
+                    <div style="width: 180px; height: 180px; position: relative;">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                    <div id="customLegend" class="legend-scroll"></div>
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <div class="glass-panel chart-card">
+                    <div class="chart-title">Daily Activity</div>
+                    <div style="flex:1; position: relative;">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-panel chart-card">
+                    <div class="chart-title">Cumulative Trend</div>
+                    <div style="flex:1; position: relative;">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel table-card">
+        <div class="table-header">
+            <h2 style="font-size: 1.1rem; font-weight: 600;">Recent Transactions</h2>
+        </div>
+        <div class="table-responsive">
+            <table id="expenseTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable('date')">Date</th>
+                        <th onclick="sortTable('category')">Category</th>
+                        <th>Description</th>
+                        <th onclick="sortTable('amount')">Amount</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="expenseList"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Logic / State ---
+    const categoriesList = ['Food', 'Transport', 'Entertainment', 'Bills', 'Shopping', 'Other'];
+    // Neon Palette
+    const categoryColors = {
+        'Food': '#fb7185',          // Neon Rose
+        'Transport': '#38bdf8',     // Neon Sky
+        'Entertainment': '#c084fc', // Neon Purple
+        'Bills': '#fbbf24',         // Neon Amber
+        'Shopping': '#2dd4bf',      // Neon Teal
+        'Other': '#94a3b8'          // Slate
+    };
+
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+    let globalBudget = parseFloat(localStorage.getItem('globalBudget')) || 0;
+    let catBudgets = JSON.parse(localStorage.getItem('catBudgets')) || {};
+    let currentSort = { key: 'date', order: 'desc' };
+    let filterStart = null, filterEnd = null;
+
+    let pieChartInstance = null;
+    let barChartInstance = null;
+    let lineChartInstance = null;
+
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('date').valueAsDate = new Date();
+        initBudgetInputs();
+        setFilterPreset('month');
+        
+        // Chart Global Defaults for Dark Mode
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+    });
+
+    // --- Filters ---
+    function setFilterPreset(preset) {
+        document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${preset}`).classList.add('active');
+        const now = new Date();
+        const y = now.getFullYear(), m = now.getMonth();
+        
+        if (preset === 'week') {
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            const start = new Date(now.setDate(diff));
+            const end = new Date(now.setDate(start.getDate() + 6));
+            filterStart = start.toISOString().split('T')[0];
+            filterEnd = end.toISOString().split('T')[0];
+        } else if (preset === 'month') {
+            filterStart = new Date(y, m, 1).toISOString().split('T')[0];
+            filterEnd = new Date(y, m + 1, 0).toISOString().split('T')[0];
+        } else if (preset === 'lastMonth') {
+            filterStart = new Date(y, m - 1, 1).toISOString().split('T')[0];
+            filterEnd = new Date(y, m, 0).toISOString().split('T')[0];
+        } else {
+            filterStart = '2000-01-01'; filterEnd = '2100-01-01';
+        }
+        
+        document.getElementById('filterStart').value = filterStart;
+        document.getElementById('filterEnd').value = filterEnd;
+        updateUI();
+    }
+
+    function handleCustomDate() {
+        document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+        filterStart = document.getElementById('filterStart').value;
+        filterEnd = document.getElementById('filterEnd').value;
+        updateUI();
+    }
+
+    function getFilteredExpenses() {
+        if (!filterStart || !filterEnd) return expenses;
+        return expenses.filter(e => e.date >= filterStart && e.date <= filterEnd);
+    }
+
+    // --- Budget ---
+    function initBudgetInputs() {
+        document.getElementById('globalBudgetInput').value = globalBudget || '';
+        const c = document.getElementById('categoryInputs');
+        c.innerHTML = '';
+        categoriesList.forEach(cat => {
+            const div = document.createElement('div');
+            div.innerHTML = `<label class="input-label" style="font-size:0.75rem;">${cat}</label><input type="number" id="budget-${cat}" class="glass-input" value="${catBudgets[cat]||''}" style="padding:8px;">`;
+            c.appendChild(div);
+        });
+    }
+
+    function toggleBudgetSettings() { document.getElementById('budgetSettings').classList.toggle('open'); }
+
+    function saveBudgets() {
+        globalBudget = parseFloat(document.getElementById('globalBudgetInput').value) || 0;
+        localStorage.setItem('globalBudget', globalBudget);
+        categoriesList.forEach(cat => {
+            const val = parseFloat(document.getElementById(`budget-${cat}`).value);
+            if (val > 0) catBudgets[cat] = val; else delete catBudgets[cat];
+        });
+        localStorage.setItem('catBudgets', JSON.stringify(catBudgets));
+        toggleBudgetSettings();
+        updateUI();
+    }
+
+    // --- Actions ---
+    document.getElementById('expenseForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const amt = parseFloat(document.getElementById('amount').value);
+        if (amt <= 0) return;
+        expenses.push({
+            id: Date.now(),
+            amount: amt,
+            category: document.getElementById('category').value,
+            date: document.getElementById('date').value,
+            description: document.getElementById('description').value || '-'
+        });
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+        updateUI();
+        e.target.reset();
+        document.getElementById('date').valueAsDate = new Date();
+    });
+
+    function deleteExpense(id) {
+        if(confirm('Delete?')) {
+            expenses = expenses.filter(e => e.id !== id);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            updateUI();
+        }
+    }
+    
+    function resetData() { 
+        if(confirm('Reset all data?')) { localStorage.clear(); location.reload(); } 
+    }
+
+    function sortTable(key) {
+        currentSort.order = (currentSort.key === key && currentSort.order === 'desc') ? 'asc' : 'desc';
+        currentSort.key = key;
+        updateUI();
+    }
+
+    // --- Render ---
+    function updateUI() {
+        const data = getFilteredExpenses();
+        renderStats(data);
+        renderGlobalBudget(data);
+        renderTable(data);
+        renderCharts(data);
+    }
+
+    function renderStats(data) {
+        const total = data.reduce((s, e) => s + e.amount, 0);
+        const counts = {};
+        data.forEach(e => counts[e.category] = (counts[e.category] || 0) + e.amount);
+        const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, '-');
+        
+        // Days calc
+        const d1 = new Date(filterStart), d2 = new Date(filterEnd);
+        const days = Math.max(1, Math.ceil(Math.abs(d2 - d1) / (86400000)) + 1);
+
+        document.getElementById('totalMonth').innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        document.getElementById('topCategory').innerText = top;
+        document.getElementById('totalTx').innerText = data.length;
+        document.getElementById('avgDaily').innerText = `$${(total/days).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+    }
+
+    function renderGlobalBudget(data) {
+        const total = data.reduce((s, e) => s + e.amount, 0);
+        const el = document.getElementById('globalFigures');
+        const bar = document.getElementById('globalProgressBar');
+        const status = document.getElementById('budgetStatusText');
+        
+        el.innerText = `$${total.toFixed(0)} / $${globalBudget.toFixed(0)}`;
+        
+        if (globalBudget > 0) {
+            const pct = (total / globalBudget) * 100;
+            bar.style.width = `${Math.min(pct, 100)}%`;
+            
+            bar.className = 'budget-fill ' + (pct > 100 ? 'bg-danger' : pct > 80 ? 'bg-warning' : 'bg-success');
+            
+            if(pct > 100) status.innerText = "Limit Exceeded!";
+            else if(pct > 80) status.innerText = "Approaching Limit";
+            else status.innerText = "On Track";
+        } else {
+            bar.style.width = '0%';
+            status.innerText = "No limit set";
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('expenseList');
+        tbody.innerHTML = '';
+        const sorted = [...data].sort((a, b) => {
+            let valA = currentSort.key === 'amount' ? a.amount : a[currentSort.key];
+            let valB = currentSort.key === 'amount' ? b.amount : b[currentSort.key];
+            return (valA < valB ? 1 : -1) * (currentSort.order === 'asc' ? -1 : 1);
+        });
+
+        sorted.forEach(e => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${e.date}</td>
+                <td><span class="tag tag-${e.category.toLowerCase()}">${e.category}</span></td>
+                <td style="color:var(--text-muted)">${e.description}</td>
+                <td style="font-weight:600; color:white;">$${e.amount.toFixed(2)}</td>
+                <td style="text-align:right"><button class="btn-icon" onclick="deleteExpense(${e.id})">&times;</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderCharts(data) {
+        const catTotals = {};
+        data.forEach(e => catTotals[e.category] = (catTotals[e.category] || 0) + e.amount);
+        
+        const daily = {};
+        data.forEach(e => daily[e.date] = (daily[e.date]||0) + e.amount);
+        const dates = Object.keys(daily).sort();
+        const cum = []; let sum = 0;
+        dates.forEach(d => { sum += daily[d]; cum.push(sum); });
+
+        // Legend
+        const leg = document.getElementById('customLegend');
+        leg.innerHTML = '';
+        categoriesList.forEach(cat => {
+            if(!catTotals[cat] && !catBudgets[cat]) return;
+            const spent = catTotals[cat] || 0;
+            const bud = catBudgets[cat] || 0;
+            const pct = bud > 0 ? (spent/bud)*100 : 0;
+            
+            // Item
+            const div = document.createElement('div');
+            div.className = 'legend-item';
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <div class="legend-dot" style="color:${categoryColors[cat]}"></div>
+                    <div>
+                        <div style="color:white; font-weight:500;">${cat}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">$${spent.toFixed(0)} ${bud>0?'/ $'+bud:''}</div>
+                    </div>
+                </div>
+                ${bud > 0 ? `<div class="legend-bar-bg"><div class="legend-bar-fill" style="width:${Math.min(pct,100)}%; background-color:${pct>100?'var(--danger)':categoryColors[cat]}"></div></div>` : ''}
+            `;
+            leg.appendChild(div);
+        });
+
+        // Charts
+        if (pieChartInstance) pieChartInstance.destroy();
+        pieChartInstance = new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catTotals),
+                datasets: [{
+                    data: Object.values(catTotals),
+                    backgroundColor: Object.keys(catTotals).map(c => categoryColors[c]),
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                cutout: '80%'
+            }
+        });
+
+        if (barChartInstance) barChartInstance.destroy();
+        barChartInstance = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: dates.map(d => d.slice(5)),
+                datasets: [{
+                    label: 'Spent',
+                    data: dates.map(d => daily[d]),
+                    backgroundColor: '#38bdf8',
+                    borderRadius: 4,
+                    barThickness: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        if (lineChartInstance) lineChartInstance.destroy();
+        lineChartInstance = new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: dates.map(d => d.slice(5)),
+                datasets: [{
+                    label: 'Trend',
+                    data: cum,
+                    borderColor: '#8b5cf6',
+                    borderWidth: 3,
+                    backgroundColor: (ctx) => {
+                        const g = ctx.chart.ctx.createLinearGradient(0,0,0,300);
+                        g.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+                        g.addColorStop(1, 'rgba(139, 92, 246, 0)');
+                        return g;
+                    },
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
