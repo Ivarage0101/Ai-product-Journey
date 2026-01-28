@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Blog Engine Pro</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <style>
+        /* --- CSS Variables --- */
+        :root {
+            /* Dark Theme (Default) */
+            --bg-color: #1e1e1e;
+            --panel-bg: #252526;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --accent-hover: #005f9e;
+            --border-color: #3e3e42;
+            --input-bg: #1e1e1e;
+            --preview-bg: #ffffff;
+            --preview-text: #24292f;
+            --danger-color: #d32f2f;
+            --danger-hover: #b71c1c;
+            --success-color: #2da44e;
+            --success-hover: #2c974b;
+        }
+
+        /* Light Theme Overrides */
+        body.light-theme {
+            --bg-color: #f0f2f5;
+            --panel-bg: #ffffff;
+            --text-color: #24292f;
+            --accent-color: #0969da;
+            --accent-hover: #0a53be;
+            --border-color: #d0d7de;
+            --input-bg: #ffffff;
+            --preview-bg: #ffffff;
+            --preview-text: #24292f;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- Header --- */
+        header {
+            background-color: var(--panel-bg);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .header-top, .header-bottom {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .header-top {
+            justify-content: space-between;
+        }
+
+        .inputs-container {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        input[type="text"], select {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: 2px solid var(--accent-color);
+            border-color: transparent;
+        }
+
+        .flex-grow { flex: 1; }
+
+        /* --- Buttons --- */
+        button {
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: opacity 0.2s;
+            font-size: 0.85rem;
+        }
+
+        button:hover { opacity: 0.9; }
+        
+        .btn-primary { background-color: var(--accent-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-danger { background-color: var(--danger-color); }
+        
+        .btn-icon {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+        }
+        .btn-icon:hover { background-color: rgba(128,128,128,0.1); }
+
+        /* --- Main Layout --- */
+        main {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 140px);
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            background: var(--panel-bg);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Editor */
+        #markdown-input {
+            flex: 1;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: none;
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        /* Preview */
+        #preview-output {
+            flex: 1;
+            background-color: var(--preview-bg);
+            color: var(--preview-text);
+            padding: 2rem 3rem;
+            overflow-y: auto;
+            font-family: 'Georgia', serif;
+            line-height: 1.8;
+        }
+
+        /* Preview Typography */
+        #preview-output h1 { font-size: 2.5rem; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; margin-bottom: 1rem; }
+        #preview-output h2 { font-size: 2rem; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; margin-top: 1.5rem; }
+        #preview-output code { background-color: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+        #preview-output pre { background-color: #282c34; border-radius: 6px; padding: 1rem; overflow-x: auto; }
+        #preview-output pre code { background-color: transparent; color: #abb2bf; padding: 0; }
+        #preview-output blockquote { border-left: 4px solid #dfe2e5; color: #6a737d; padding-left: 1rem; }
+        #preview-output img { max-width: 100%; border-radius: 4px; }
+        #preview-output a { color: var(--accent-color); text-decoration: none; }
+        
+        .preview-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            font-family: sans-serif;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 1rem;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <div class="inputs-container">
+            <input type="text" id="post-title" class="flex-grow" placeholder="Post Title">
+            <input type="text" id="post-tags" class="flex-grow" placeholder="Tags (comma separated)">
+        </div>
+        <button id="theme-toggle" class="btn-icon" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            🌗
+        </button>
+    </div>
+
+    <div class="header-bottom">
+        <input type="text" id="search-box" placeholder="🔍 Filter saved posts..." oninput="filterPosts()">
+        
+        <select id="saved-posts-select" class="flex-grow" onchange="loadSelectedPost()">
+            <option value="">Load saved post...</option>
+        </select>
+
+        <button onclick="savePost()" class="btn-primary">💾 Save</button>
+        <button onclick="exportPost()" class="btn-success">⬇️ Export .md</button>
+        <button onclick="deletePost()" class="btn-danger">🗑️ Delete</button>
+    </div>
+</header>
+
+<main>
+    <div class="pane">
+        <div class="pane-header">Markdown Editor</div>
+        <textarea id="markdown-input" placeholder="# Write your masterpiece..."></textarea>
+    </div>
+    <div class="pane">
+        <div class="pane-header">Live Preview</div>
+        <div id="preview-output"></div>
+    </div>
+</main>
+
+<script>
+    // --- Configuration ---
+    marked.setOptions({
+        breaks: true,
+        gfm: true,
+        highlight: function(code, lang) {
+            const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+            return highlight.highlight(code, { language }).value;
+        }
+    });
+
+    // --- DOM Elements ---
+    const titleInput = document.getElementById('post-title');
+    const tagsInput = document.getElementById('post-tags');
+    const editor = document.getElementById('markdown-input');
+    const preview = document.getElementById('preview-output');
+    const selectMenu = document.getElementById('saved-posts-select');
+    const searchBox = document.getElementById('search-box');
+    const body = document.body;
+
+    // --- State ---
+    let currentPostId = null;
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load Theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            body.classList.add('light-theme');
+        }
+
+        updatePreview();
+        refreshSavedPostsList();
+        
+        if(!titleInput.value) titleInput.focus();
+    });
+
+    // --- Event Listeners ---
+    editor.addEventListener('input', updatePreview);
+    titleInput.addEventListener('input', updatePreview);
+    tagsInput.addEventListener('input', updatePreview);
+
+    // --- Core Functions ---
+
+    // 1. Theme Toggle
+    function toggleTheme() {
+        body.classList.toggle('light-theme');
+        const theme = body.classList.contains('light-theme') ? 'light' : 'dark';
+        localStorage.setItem('theme', theme);
+    }
+
+    // 2. Update Preview
+    function updatePreview() {
+        const title = titleInput.value || 'Untitled Post';
+        const tags = tagsInput.value ? tagsInput.value.split(',').map(t => t.trim()).join(', ') : 'No tags';
+        const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        const htmlContent = marked.parse(editor.value);
+
+        const metaHTML = `
+            <h1 style="margin-bottom: 0.5rem; border:none;">${title}</h1>
+            <div class="preview-meta">
+                <strong>Date:</strong> ${date} &nbsp;|&nbsp; 
+                <strong>Tags:</strong> ${tags}
+            </div>
+        `;
+
+        preview.innerHTML = metaHTML + htmlContent;
+
+        preview.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+    }
+
+    // 3. Save Post
+    function savePost() {
+        const title = titleInput.value.trim();
+        if (!title) {
+            alert("Please enter a post title before saving.");
+            return;
+        }
+
+        const postData = {
+            id: currentPostId || Date.now().toString(),
+            title: title,
+            tags: tagsInput.value,
+            content: editor.value,
+            date: new Date().toISOString()
+        };
+
+        let posts = JSON.parse(localStorage.getItem('blog_posts') || '[]');
+        const existingIndex = posts.findIndex(p => p.id === postData.id);
+        
+        if (existingIndex > -1) {
+            posts[existingIndex] = postData;
+        } else {
+            posts.push(postData);
+            currentPostId = postData.id;
+        }
+
+        localStorage.setItem('blog_posts', JSON.stringify(posts));
+        refreshSavedPostsList();
+        
+        // Visual feedback
+        const btn = document.querySelector('.btn-primary');
+        const originalText = btn.innerText;
+        btn.innerText = "✅ Saved!";
+        setTimeout(() => btn.innerText = originalText, 1500);
+    }
+
+    // 4. Filter & Refresh List
+    function refreshSavedPostsList() {
+        // Trigger filter with current search value
+        filterPosts();
+    }
+
+    function filterPosts() {
+        const query = searchBox.value.toLowerCase();
+        const posts = JSON.parse(localStorage.getItem('blog_posts') || '[]');
+        
+        // Sort newest first
+        posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Filter
+        const filteredPosts = posts.filter(post => {
+            const matchTitle = post.title.toLowerCase().includes(query);
+            const matchTags = post.tags.toLowerCase().includes(query);
+            return matchTitle || matchTags;
+        });
+
+        // Rebuild Select
+        selectMenu.innerHTML = '<option value="">Load saved post...</option>';
+        filteredPosts.forEach(post => {
+            const option = document.createElement('option');
+            option.value = post.id;
+            option.innerText = `${post.title} (${new Date(post.date).toLocaleDateString()})`;
+            selectMenu.appendChild(option);
+        });
+
+        if(currentPostId && filteredPosts.find(p => p.id === currentPostId)) {
+            selectMenu.value = currentPostId;
+        }
+    }
+
+    // 5. Load Post
+    function loadSelectedPost() {
+        const selectedId = selectMenu.value;
+        if (!selectedId) return;
+
+        const posts = JSON.parse(localStorage.getItem('blog_posts') || '[]');
+        const post = posts.find(p => p.id === selectedId);
+
+        if (post) {
+            currentPostId = post.id;
+            titleInput.value = post.title;
+            tagsInput.value = post.tags;
+            editor.value = post.content;
+            updatePreview();
+        }
+    }
+
+    // 6. Delete Post
+    function deletePost() {
+        if (!currentPostId) {
+            alert("No saved post is currently selected/loaded.");
+            return;
+        }
+
+        if (confirm("Are you sure you want to delete this post? This cannot be undone.")) {
+            let posts = JSON.parse(localStorage.getItem('blog_posts') || '[]');
+            posts = posts.filter(p => p.id !== currentPostId);
+            localStorage.setItem('blog_posts', JSON.stringify(posts));
+            
+            // Reset Editor
+            currentPostId = null;
+            titleInput.value = "";
+            tagsInput.value = "";
+            editor.value = "";
+            updatePreview();
+            refreshSavedPostsList();
+        }
+    }
+
+    // 7. Export as .md
+    function exportPost() {
+        const title = titleInput.value.trim() || "untitled-post";
+        const content = editor.value;
+        const tags = tagsInput.value;
+        const date = new Date().toISOString().split('T')[0];
+
+        // Create Frontmatter (YAML style header)
+        const fileContent = `---
+title: ${title}
+date: ${date}
+tags: ${tags}
+---
+
+${content}`;
+
+        // Create Blob
+        const blob = new Blob([fileContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create clean filename
+        const filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
+
+        // Trigger Download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+</body>
+</html>
